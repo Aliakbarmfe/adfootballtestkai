@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>پنل مدیریت فوتبالی</title>
+  <style>
+    * { box-sizing: border-box; font-family: Tahoma, sans-serif; }
+    body { background: #f0f2f5; margin: 0; padding: 20px; }
+    .hidden { display: none !important; }
+    
+    /* Login Form Styles */
+    .login-wrapper { max-width: 350px; margin: 100px auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .custom-input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; }
+    .btn { background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+    .btn-danger { background: #dc3545; }
+    .btn-edit { background: #ffc107; color: #000; }
+    .btn-add { background: #007bff; font-size: 18px; font-weight: bold; }
+    
+    /* Dashboard Buttons */
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; max-width: 800px; margin: 40px auto; }
+    .dash-btn { background: #343a40; color: white; padding: 25px 10px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    
+    /* Modal Popup Styles */
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+    .modal-content { background: white; width: 90%; max-width: 600px; max-height: 80vh; border-radius: 8px; padding: 20px; overflow-y: auto; position: relative; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; }
+    .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; }
+    
+    /* List Rows */
+    .data-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+    .actions { display: flex; gap: 5px; }
+  </style>
+</head>
+<body>
+
+  <div id="loginSection" class="login-wrapper">
+    <h3>ورود به پنل مدیریت</h3>
+    <input type="text" id="x_user" class="custom-input" placeholder="نام کاربری" autocomplete="off" spellcheck="false">
+    <input type="text" id="x_pass" class="custom-input" placeholder="رمز عبور" style="-webkit-text-security: disk;" autocomplete="off" spellcheck="false">
+    <button onclick="handleLogin()" class="btn" style="width: 100%;">ورود</button>
+  </div>
+
+  <div id="dashboardSection" class="hidden">
+    <h2 style="text-align: center;">پنل مدیریت سایت فوتبالی</h2>
+    <div class="dashboard-grid">
+      <button class="dash-btn" onclick="openModal('adminInfo')">اطلاعات مدیر</button>
+      <button class="dash-btn" onclick="openModal('teams')">لیست تیم‌ها</button>
+      <button class="dash-btn" onclick="openModal('products')">محصولات</button>
+      <button class="dash-btn" onclick="openModal('news')">اخبار</button>
+      <button class="dash-btn" onclick="openModal('honors')">افتخارات</button>
+      <button class="dash-btn" onclick="openModal('matches')">بازی‌ها</button>
+      <button class="dash-btn" onclick="openModal('topScorers')">آقای گل</button>
+    </div>
+  </div>
+
+  <div id="appModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">عنوان</h3>
+        <div>
+          <button id="modalAddBtn" class="btn btn-add hidden">+</button>
+          <button class="close-btn" onclick="closeModal()">✕</button>
+        </div>
+      </div>
+      <div id="modalFormContainer" class="hidden" style="margin-bottom: 15px; padding: 10px; background: #e9ecef; border-radius: 5px;"></div>
+      <div id="modalListContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api/proxy?path=';
+    let currentAdmin = { user: 'fizon', pass: 'fizon' };
+    let activeModule = '';
+
+    // Auth Handling
+    function handleLogin() {
+      const u = document.getElementById('x_user').value;
+      const p = document.getElementById('x_pass').value;
+      if (u === currentAdmin.user && p === currentAdmin.pass) {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('dashboardSection').classList.remove('hidden');
+      } else {
+        alert('نام کاربری یا رمز عبور اشتباه است');
+      }
+    }
+
+    // Modal Control
+    function openModal(module) {
+      activeModule = module;
+      document.getElementById('appModal').classList.remove('hidden');
+      document.getElementById('modalFormContainer').classList.add('hidden');
+      document.getElementById('modalFormContainer').innerHTML = '';
+      
+      const titleMap = {
+        adminInfo: 'اطلاعات مدیر',
+        teams: 'لیست تیم‌ها',
+        products: 'محصولات',
+        news: 'اخبار',
+        honors: 'افتخارات',
+        matches: 'بازی‌ها',
+        topScorers: 'آقای گل'
+      };
+      
+      document.getElementById('modalTitle').innerText = titleMap[module];
+      const addBtn = document.getElementById('modalAddBtn');
+      
+      if (module === 'adminInfo') {
+        addBtn.classList.add('hidden');
+        renderAdminForm();
+      } else {
+        addBtn.classList.remove('hidden');
+        addBtn.onclick = () => renderAddEditForm();
+        fetchModuleData();
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('appModal').classList.add('hidden');
+    }
+
+    // Proxy API Requests
+    async function apiRequest(path, method = 'GET', body = null) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(`${API_BASE}${path}`, opts);
+      return await res.json();
+    }
+
+    // Module Fetch & Render
+    async function fetchModuleData() {
+      const container = document.getElementById('modalListContainer');
+      container.innerHTML = 'در حال بارگذاری...';
+      const data = await apiRequest(activeModule);
+      container.innerHTML = '';
+      
+      if (!data) { container.innerHTML = 'هیچ داده‌ای یافت نشد.'; return; }
+
+      Object.keys(data).forEach(id => {
+        const item = data[id];
+        const row = document.createElement('div');
+        row.className = 'data-row';
+        row.innerHTML = `
+          <div>${getItemText(item)}</div>
+          <div class="actions">
+            <button class="btn btn-edit" onclick="renderAddEditForm('${id}', ${JSON.stringify(item).replace(/"/g, '&quot;')})">✎</button>
+            <button class="btn btn-danger" onclick="deleteItem('${id}')">🗑</button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function getItemText(item) {
+      switch(activeModule) {
+        case 'teams': return `نام: ${item.name} | گل: ${item.goals} | امتیاز: ${item.points}`;
+        case 'products': return `محصول: ${item.name} | قیمت: ${item.price} | توضیح: ${item.desc}`;
+        case 'news': return `<b>${item.title}</b>: ${item.desc}`;
+        case 'honors': return `مربی: ${item.coach} | طلا: ${item.gold} | نقره: ${item.silver} | برنز: ${item.bronze}`;
+        case 'matches': return `${item.team1} (${item.goals1}) - (${item.goals2}) ${item.team2}`;
+        case 'topScorers': return `[${item.rank}] ${item.player} (${item.team}) - گل: ${item.goals} | پرچم: ${item.flag}`;
+        default: return '';
+      }
+    }
+
+    // Dynamic Form Builder
+    function renderAddEditForm(id = null, itemData = {}) {
+      const container = document.getElementById('modalFormContainer');
+      container.classList.remove('hidden');
+      
+      let fields = '';
+      if (activeModule === 'teams') {
+        fields = `
+          <input id="f_name" class="custom-input" placeholder="نام تیم" value="${itemData.name || ''}">
+          <input id="f_goals" type="number" class="custom-input" placeholder="تعداد گل" value="${itemData.goals || ''}">
+          <input id="f_points" type="number" class="custom-input" placeholder="امتیاز تیم" value="${itemData.points || ''}">
+        `;
+      } else if (activeModule === 'products') {
+        fields = `
+          <input id="f_name" class="custom-input" placeholder="نام محصول" value="${itemData.name || ''}">
+          <input id="f_price" class="custom-input" placeholder="قیمت محصول" value="${itemData.price || ''}">
+          <input id="f_desc" class="custom-input" placeholder="توضیحات اضافی" value="${itemData.desc || ''}">
+        `;
+      } else if (activeModule === 'news') {
+        fields = `
+          <input id="f_title" class="custom-input" placeholder="عنوان اخبار" value="${itemData.title || ''}">
+          <textarea id="f_desc" class="custom-input" placeholder="توضیحات اخبار">${itemData.desc || ''}</textarea>
+        `;
+      } else if (activeModule === 'honors') {
+        fields = `
+          <input id="f_coach" class="custom-input" placeholder="نام مربی" value="${itemData.coach || ''}">
+          <input id="f_gold" type="number" class="custom-input" placeholder="تعداد مدال طلا" value="${itemData.gold || ''}">
+          <input id="f_silver" type="number" class="custom-input" placeholder="تعداد مدال نقره" value="${itemData.silver || ''}">
+          <input id="f_bronze" type="number" class="custom-input" placeholder="تعداد مدال برنز" value="${itemData.bronze || ''}">
+        `;
+      } else if (activeModule === 'matches') {
+        fields = `
+          <input id="f_team1" class="custom-input" placeholder="نام تیم اول" value="${itemData.team1 || ''}">
+          <input id="f_team2" class="custom-input" placeholder="نام تیم حریف" value="${itemData.team2 || ''}">
+          <input id="f_goals1" type="number" class="custom-input" placeholder="تعداد گل های تیم اول" value="${itemData.goals1 || ''}">
+          <input id="f_goals2" type="number" class="custom-input" placeholder="تعداد گل های تیم دوم" value="${itemData.goals2 || ''}">
+        `;
+      } else if (activeModule === 'topScorers') {
+        fields = `
+          <input id="f_player" class="custom-input" placeholder="نام بازیکن" value="${itemData.player || ''}">
+          <input id="f_team" class="custom-input" placeholder="تیم بازیکن" value="${itemData.team || ''}">
+          <input id="f_flag" class="custom-input" placeholder="پرچم بازیکن" value="${itemData.flag || ''}">
+          <input id="f_rank" type="number" class="custom-input" placeholder="رتبه بازیکن" value="${itemData.rank || ''}">
+          <input id="f_goals" type="number" class="custom-input" placeholder="تعداد گل ها" value="${itemData.goals || ''}">
+        `;
+      }
+
+      container.innerHTML = `
+        ${fields}
+        <button class="btn" onclick="saveData('${id || ''}')">تایید و ثبت</button>
+      `;
+    }
+
+    // Save Data (POST / PUT)
+    async function saveData(id) {
+      let payload = {};
+      if (activeModule === 'teams') {
+        payload = { name: document.getElementById('f_name').value, goals: document.getElementById('f_goals').value, points: document.getElementById('f_points').value };
+      } else if (activeModule === 'products') {
+        payload = { name: document.getElementById('f_name').value, price: document.getElementById('f_price').value, desc: document.getElementById('f_desc').value };
+      } else if (activeModule === 'news') {
+        payload = { title: document.getElementById('f_title').value, desc: document.getElementById('f_desc').value };
+      } else if (activeModule === 'honors') {
+        payload = { coach: document.getElementById('f_coach').value, gold: document.getElementById('f_gold').value, silver: document.getElementById('f_silver').value, bronze: document.getElementById('f_bronze').value };
+      } else if (activeModule === 'matches') {
+        payload = { team1: document.getElementById('f_team1').value, team2: document.getElementById('f_team2').value, goals1: document.getElementById('f_goals1').value, goals2: document.getElementById('f_goals2').value };
+      } else if (activeModule === 'topScorers') {
+        payload = { player: document.getElementById('f_player').value, team: document.getElementById('f_team').value, flag: document.getElementById('f_flag').value, rank: document.getElementById('f_rank').value, goals: document.getElementById('f_goals').value };
+      }
+
+      const path = id ? `${activeModule}/${id}` : activeModule;
+      const method = id ? 'PUT' : 'POST';
+
+      await apiRequest(path, method, payload);
+      document.getElementById('modalFormContainer').classList.add('hidden');
+      fetchModuleData();
+    }
+
+    // Delete Data
+    async function deleteItem(id) {
+      if (confirm('آیا از حذف این مورد اطمینان دارید؟')) {
+        await apiRequest(`${activeModule}/${id}`, 'DELETE');
+        fetchModuleData();
+      }
+    }
+
+    // Admin Info Handling
+    function renderAdminForm() {
+      const container = document.getElementById('modalListContainer');
+      container.innerHTML = `
+        <div style="padding: 10px;">
+          <label>نام کاربری جدید:</label>
+          <input id="new_u" class="custom-input" value="${currentAdmin.user}">
+          <label>رمز عبور جدید:</label>
+          <input id="new_p" class="custom-input" value="${currentAdmin.pass}">
+          <button class="btn" onclick="updateAdmin()">ویرایش اطلاعات مدیر</button>
+        </div>
+      `;
+    }
+
+    function updateAdmin() {
+      currentAdmin.user = document.getElementById('new_u').value;
+      currentAdmin.pass = document.getElementById('new_p').value;
+      alert('اطلاعات مدیر با موفقیت تغییر یافت.');
+      closeModal();
+    }
+  </script>
+</body>
+</html>
