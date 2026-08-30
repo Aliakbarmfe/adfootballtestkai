@@ -576,6 +576,7 @@
           <input id="f_media1" class="custom-input" placeholder="نام رسانه برای تیم یک" value="${itemData.media1 || ''}">
           <input id="f_coach1" class="custom-input" placeholder="مربی تیم اول" value="${itemData.coach1 || ''}">
           <input id="f_goals1" type="number" class="custom-input" placeholder="تعداد گل های تیم اول" value="${itemData.goals1 || ''}">
+          <input id="f_played1" type="number" class="custom-input" placeholder="تعداد بازی های تیم اول" value="${itemData.played1 || ''}">
           
           <label>بازیکنان تیم اول:</label>
           <div id="players1_container"></div>
@@ -587,6 +588,7 @@
           <input id="f_media2" class="custom-input" placeholder="نام رسانه برای تیم دو" value="${itemData.media2 || ''}">
           <input id="f_coach2" class="custom-input" placeholder="مربی تیم دوم" value="${itemData.coach2 || ''}">
           <input id="f_goals2" type="number" class="custom-input" placeholder="تعداد گل های تیم دوم" value="${itemData.goals2 || ''}">
+          <input id="f_played2" type="number" class="custom-input" placeholder="تعداد بازی های تیم دوم" value="${itemData.played2 || ''}">
           
           <label>بازیکنان تیم دوم:</label>
           <div id="players2_container"></div>
@@ -675,11 +677,13 @@
           media1: document.getElementById('f_media1').value,
           coach1: document.getElementById('f_coach1').value,
           goals1: document.getElementById('f_goals1').value, 
+          played1: document.getElementById('f_played1').value,
           players1: players1,
           team2: document.getElementById('f_team2').value, 
           media2: document.getElementById('f_media2').value,
           coach2: document.getElementById('f_coach2').value,
           goals2: document.getElementById('f_goals2').value,
+          played2: document.getElementById('f_played2').value,
           players2: players2
         };
       } else if (activeModule === 'topScorers') {
