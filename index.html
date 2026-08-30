@@ -188,10 +188,31 @@
       color: #000;
     }
 
+    /* Views Badge Style */
+    .views-counter-badge {
+      max-width: 300px;
+      margin: 20px auto 10px auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 12px 20px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 1rem;
+      color: var(--text-muted);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .views-counter-badge span {
+      color: var(--primary-green);
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin-right: 6px;
+    }
+
     /* Dashboard Header & Grid */
     .dashboard-header {
       text-align: center;
-      margin: 30px 0 40px 0;
+      margin: 10px 0 40px 0;
       font-size: 1.6rem;
       font-weight: 900;
       background: linear-gradient(45deg, #fff, var(--text-muted));
@@ -396,6 +417,9 @@
   </div>
 
   <div id="dashboardSection" class="hidden">
+    <div class="views-counter-badge">
+      تعداد بازدید سایت کاربر: <span id="siteViewsCount">در حال دریافت...</span>
+    </div>
     <h2 class="dashboard-header">پنل مدیریت سایت فوتبالی</h2>
     <div class="dashboard-grid">
       <button class="dash-btn" onclick="openModal('adminInfo')">اطلاعات مدیر</button>
@@ -436,8 +460,20 @@
       if (u === currentAdmin.user && p === currentAdmin.pass) {
         document.getElementById('loginSection').classList.add('hidden');
         document.getElementById('dashboardSection').classList.remove('hidden');
+        fetchViewsCount();
       } else {
         alert('نام کاربری یا رمز عبور اشتباه است');
+      }
+    }
+
+    // Fetch Site Views Count
+    async function fetchViewsCount() {
+      const viewsEl = document.getElementById('siteViewsCount');
+      try {
+        const viewsData = await apiRequest('views');
+        viewsEl.innerText = (viewsData !== null && viewsData !== undefined) ? viewsData : 0;
+      } catch (e) {
+        viewsEl.innerText = 'خطا در دریافت';
       }
     }
 
