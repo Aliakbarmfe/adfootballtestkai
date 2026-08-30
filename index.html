@@ -39,6 +39,31 @@
 
     .hidden { display: none !important; }
 
+    /* Visit Counter Banner */
+    .views-banner {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 20px;
+      max-width: 900px;
+      margin: 0 auto 20px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    .views-banner span {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .views-count {
+      color: var(--primary-green);
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+
     /* Login Form Styles */
     .login-wrapper {
       max-width: 400px;
@@ -188,31 +213,10 @@
       color: #000;
     }
 
-    /* Views Badge Style */
-    .views-counter-badge {
-      max-width: 300px;
-      margin: 20px auto 10px auto;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      padding: 12px 20px;
-      border-radius: 12px;
-      text-align: center;
-      font-size: 1rem;
-      color: var(--text-muted);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-
-    .views-counter-badge span {
-      color: var(--primary-green);
-      font-weight: bold;
-      font-size: 1.1rem;
-      margin-right: 6px;
-    }
-
     /* Dashboard Header & Grid */
     .dashboard-header {
       text-align: center;
-      margin: 10px 0 40px 0;
+      margin: 10px 0 30px 0;
       font-size: 1.6rem;
       font-weight: 900;
       background: linear-gradient(45deg, #fff, var(--text-muted));
@@ -417,9 +421,11 @@
   </div>
 
   <div id="dashboardSection" class="hidden">
-    <div class="views-counter-badge">
-      تعداد بازدید سایت کاربر: <span id="siteViewsCount">در حال دریافت...</span>
+    <div class="views-banner">
+      <span>تعداد بازدید کل سایت کاربر:</span>
+      <span id="siteViewsDisplay" class="views-count">در حال بارگذاری...</span>
     </div>
+
     <h2 class="dashboard-header">پنل مدیریت سایت فوتبالی</h2>
     <div class="dashboard-grid">
       <button class="dash-btn" onclick="openModal('adminInfo')">اطلاعات مدیر</button>
@@ -453,6 +459,16 @@
     let currentAdmin = { user: 'fizon', pass: 'fizon' };
     let activeModule = '';
 
+    // Fetch site visitors count from Firebase
+    async function fetchSiteViews() {
+      try {
+        const count = await apiRequest('viewsCount');
+        document.getElementById('siteViewsDisplay').innerText = count !== null && count !== undefined ? count : 0;
+      } catch (err) {
+        document.getElementById('siteViewsDisplay').innerText = 'خطا در دریافت';
+      }
+    }
+
     // Auth Handling
     function handleLogin() {
       const u = document.getElementById('x_user').value;
@@ -460,20 +476,9 @@
       if (u === currentAdmin.user && p === currentAdmin.pass) {
         document.getElementById('loginSection').classList.add('hidden');
         document.getElementById('dashboardSection').classList.remove('hidden');
-        fetchViewsCount();
+        fetchSiteViews();
       } else {
         alert('نام کاربری یا رمز عبور اشتباه است');
-      }
-    }
-
-    // Fetch Site Views Count
-    async function fetchViewsCount() {
-      const viewsEl = document.getElementById('siteViewsCount');
-      try {
-        const viewsData = await apiRequest('views');
-        viewsEl.innerText = (viewsData !== null && viewsData !== undefined) ? viewsData : 0;
-      } catch (e) {
-        viewsEl.innerText = 'خطا در دریافت';
       }
     }
 
