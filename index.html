@@ -523,7 +523,7 @@
         case 'honors': return `مربی: ${item.coach} | طلا: ${item.gold} | نقره: ${item.silver} | برنز: ${item.bronze}`;
         case 'matches': return `${item.team1} (${item.goals1}) - (${item.goals2}) ${item.team2}`;
         case 'topScorers': return `[${item.rank}] ${item.player} (${item.team}) - گل: ${item.goals} | پرچم: ${item.flag}`;
-        case 'games': return `تیم اول: <b>${item.team1}</b> | تیم دوم: <b>${item.team2}</b>`;
+        case 'games': return `تیم اول: <b>${item.team1}</b> (تعداد بازی: ${item.games1 || 0}) | تیم دوم: <b>${item.team2}</b> (تعداد بازی: ${item.games2 || 0})`;
         default: return '';
       }
     }
@@ -576,7 +576,6 @@
           <input id="f_media1" class="custom-input" placeholder="نام رسانه برای تیم یک" value="${itemData.media1 || ''}">
           <input id="f_coach1" class="custom-input" placeholder="مربی تیم اول" value="${itemData.coach1 || ''}">
           <input id="f_goals1" type="number" class="custom-input" placeholder="تعداد گل های تیم اول" value="${itemData.goals1 || ''}">
-          <input id="f_played1" type="number" class="custom-input" placeholder="تعداد بازی های تیم اول" value="${itemData.played1 || ''}">
           
           <label>بازیکنان تیم اول:</label>
           <div id="players1_container"></div>
@@ -588,7 +587,6 @@
           <input id="f_media2" class="custom-input" placeholder="نام رسانه برای تیم دو" value="${itemData.media2 || ''}">
           <input id="f_coach2" class="custom-input" placeholder="مربی تیم دوم" value="${itemData.coach2 || ''}">
           <input id="f_goals2" type="number" class="custom-input" placeholder="تعداد گل های تیم دوم" value="${itemData.goals2 || ''}">
-          <input id="f_played2" type="number" class="custom-input" placeholder="تعداد بازی های تیم دوم" value="${itemData.played2 || ''}">
           
           <label>بازیکنان تیم دوم:</label>
           <div id="players2_container"></div>
@@ -605,7 +603,10 @@
       } else if (activeModule === 'games') {
         fields = `
           <input id="f_team1" class="custom-input" placeholder="تیم اول" value="${itemData.team1 || ''}">
+          <input id="f_games1" type="number" class="custom-input" placeholder="تعداد بازی‌های تیم اول" value="${itemData.games1 || ''}">
+          <hr style="border-color: var(--border-color); margin: 10px 0;">
           <input id="f_team2" class="custom-input" placeholder="تیم دوم" value="${itemData.team2 || ''}">
+          <input id="f_games2" type="number" class="custom-input" placeholder="تعداد بازی‌های تیم دوم" value="${itemData.games2 || ''}">
         `;
       }
 
@@ -677,19 +678,22 @@
           media1: document.getElementById('f_media1').value,
           coach1: document.getElementById('f_coach1').value,
           goals1: document.getElementById('f_goals1').value, 
-          played1: document.getElementById('f_played1').value,
           players1: players1,
           team2: document.getElementById('f_team2').value, 
           media2: document.getElementById('f_media2').value,
           coach2: document.getElementById('f_coach2').value,
           goals2: document.getElementById('f_goals2').value,
-          played2: document.getElementById('f_played2').value,
           players2: players2
         };
       } else if (activeModule === 'topScorers') {
         payload = { player: document.getElementById('f_player').value, team: document.getElementById('f_team').value, flag: document.getElementById('f_flag').value, rank: document.getElementById('f_rank').value, goals: document.getElementById('f_goals').value };
       } else if (activeModule === 'games') {
-        payload = { team1: document.getElementById('f_team1').value, team2: document.getElementById('f_team2').value };
+        payload = { 
+          team1: document.getElementById('f_team1').value, 
+          games1: document.getElementById('f_games1').value,
+          team2: document.getElementById('f_team2').value,
+          games2: document.getElementById('f_games2').value
+        };
       }
 
       const path = id ? `${activeModule}/${id}` : activeModule;
