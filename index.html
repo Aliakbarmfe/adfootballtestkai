@@ -165,6 +165,29 @@
       color: #000;
     }
 
+    /* Dynamic Player Input Rows */
+    .dynamic-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .btn-sub-add {
+      background: rgba(0, 255, 135, 0.2);
+      color: var(--primary-green);
+      border: 1px solid rgba(0, 255, 135, 0.4);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .btn-sub-add:hover {
+      background: var(--primary-green);
+      color: #000;
+    }
+
     /* Dashboard Header & Grid */
     .dashboard-header {
       text-align: center;
@@ -210,7 +233,7 @@
       color: var(--accent-gold);
     }
 
-    /* Modal Popup Styles (95% Screen on Mobile) */
+    /* Modal Popup Styles */
     .modal {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -291,6 +314,8 @@
       border-radius: 14px;
       padding: 18px;
       margin-bottom: 20px;
+      max-height: 70vh;
+      overflow-y: auto;
     }
 
     #modalListContainer {
@@ -299,19 +324,20 @@
       padding-right: 5px;
     }
 
-    /* Custom Scrollbar for Modal Body */
-    #modalListContainer::-webkit-scrollbar {
+    #modalListContainer::-webkit-scrollbar,
+    #modalFormContainer::-webkit-scrollbar {
       width: 6px;
     }
-    #modalListContainer::-webkit-scrollbar-track {
+    #modalListContainer::-webkit-scrollbar-track,
+    #modalFormContainer::-webkit-scrollbar-track {
       background: rgba(255, 255, 255, 0.02);
     }
-    #modalListContainer::-webkit-scrollbar-thumb {
+    #modalListContainer::-webkit-scrollbar-thumb,
+    #modalFormContainer::-webkit-scrollbar-thumb {
       background: var(--bg-card-hover);
       border-radius: 4px;
     }
 
-    /* List Rows */
     .data-row {
       display: flex;
       justify-content: space-between;
@@ -428,7 +454,7 @@
         products: 'محصولات',
         news: 'اخبار',
         honors: 'افتخارات',
-        matches: 'بازی‌ها',
+        matches: 'بازی‌ها (امار)',
         topScorers: 'آقای گل',
         games: 'بازی ها'
       };
@@ -502,6 +528,18 @@
       }
     }
 
+    // Helper functions to dynamically add/remove player input fields
+    function addPlayerField(containerId, value = '') {
+      const wrapper = document.getElementById(containerId);
+      const div = document.createElement('div');
+      div.className = 'dynamic-row';
+      div.innerHTML = `
+        <input class="custom-input player-input" placeholder="نام بازیکن" value="${value}">
+        <button class="btn btn-danger" type="button" onclick="this.parentElement.remove()">✕</button>
+      `;
+      wrapper.appendChild(div);
+    }
+
     // Dynamic Form Builder
     function renderAddEditForm(id = null, itemData = {}) {
       const container = document.getElementById('modalFormContainer');
@@ -535,9 +573,24 @@
       } else if (activeModule === 'matches') {
         fields = `
           <input id="f_team1" class="custom-input" placeholder="نام تیم اول" value="${itemData.team1 || ''}">
-          <input id="f_team2" class="custom-input" placeholder="نام تیم حریف" value="${itemData.team2 || ''}">
+          <input id="f_media1" class="custom-input" placeholder="نام رسانه برای تیم یک" value="${itemData.media1 || ''}">
+          <input id="f_coach1" class="custom-input" placeholder="مربی تیم اول" value="${itemData.coach1 || ''}">
           <input id="f_goals1" type="number" class="custom-input" placeholder="تعداد گل های تیم اول" value="${itemData.goals1 || ''}">
+          
+          <label>بازیکنان تیم اول:</label>
+          <div id="players1_container"></div>
+          <button type="button" class="btn-sub-add" onclick="addPlayerField('players1_container')">+ افزودن بازیکن برای تیم اول</button>
+
+          <hr style="border-color: var(--border-color); margin: 15px 0;">
+
+          <input id="f_team2" class="custom-input" placeholder="نام تیم حریف" value="${itemData.team2 || ''}">
+          <input id="f_media2" class="custom-input" placeholder="نام رسانه برای تیم دو" value="${itemData.media2 || ''}">
+          <input id="f_coach2" class="custom-input" placeholder="مربی تیم دوم" value="${itemData.coach2 || ''}">
           <input id="f_goals2" type="number" class="custom-input" placeholder="تعداد گل های تیم دوم" value="${itemData.goals2 || ''}">
+          
+          <label>بازیکنان تیم دوم:</label>
+          <div id="players2_container"></div>
+          <button type="button" class="btn-sub-add" onclick="addPlayerField('players2_container')">+ افزودن بازیکن برای تیم دوم</button>
         `;
       } else if (activeModule === 'topScorers') {
         fields = `
@@ -558,6 +611,23 @@
         ${fields}
         <button class="btn btn-auth" style="margin-top: 15px;" onclick="saveData('${id || ''}')">تایید و ثبت</button>
       `;
+
+      // Populate existing players if editing a match
+      if (activeModule === 'matches') {
+        const p1List = itemData.players1 || [];
+        if (p1List.length > 0) {
+          p1List.forEach(p => addPlayerField('players1_container', p));
+        } else {
+          addPlayerField('players1_container');
+        }
+
+        const p2List = itemData.players2 || [];
+        if (p2List.length > 0) {
+          p2List.forEach(p => addPlayerField('players2_container', p));
+        } else {
+          addPlayerField('players2_container');
+        }
+      }
     }
 
     // Games Topic Form Builder
@@ -595,7 +665,23 @@
       } else if (activeModule === 'honors') {
         payload = { coach: document.getElementById('f_coach').value, gold: document.getElementById('f_gold').value, silver: document.getElementById('f_silver').value, bronze: document.getElementById('f_bronze').value };
       } else if (activeModule === 'matches') {
-        payload = { team1: document.getElementById('f_team1').value, team2: document.getElementById('f_team2').value, goals1: document.getElementById('f_goals1').value, goals2: document.getElementById('f_goals2').value };
+        const players1 = Array.from(document.querySelectorAll('#players1_container .player-input'))
+                              .map(inp => inp.value.trim()).filter(Boolean);
+        const players2 = Array.from(document.querySelectorAll('#players2_container .player-input'))
+                              .map(inp => inp.value.trim()).filter(Boolean);
+
+        payload = { 
+          team1: document.getElementById('f_team1').value, 
+          media1: document.getElementById('f_media1').value,
+          coach1: document.getElementById('f_coach1').value,
+          goals1: document.getElementById('f_goals1').value, 
+          players1: players1,
+          team2: document.getElementById('f_team2').value, 
+          media2: document.getElementById('f_media2').value,
+          coach2: document.getElementById('f_coach2').value,
+          goals2: document.getElementById('f_goals2').value,
+          players2: players2
+        };
       } else if (activeModule === 'topScorers') {
         payload = { player: document.getElementById('f_player').value, team: document.getElementById('f_team').value, flag: document.getElementById('f_flag').value, rank: document.getElementById('f_rank').value, goals: document.getElementById('f_goals').value };
       } else if (activeModule === 'games') {
@@ -641,4 +727,3 @@
   </script>
 </body>
 </html>
- 
