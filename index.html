@@ -151,6 +151,20 @@
       box-shadow: 0 0 20px rgba(0, 255, 135, 0.6);
     }
 
+    .btn-topic {
+      background: rgba(0, 180, 216, 0.15);
+      color: var(--accent-blue);
+      border: 1px solid rgba(0, 180, 216, 0.4);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+    }
+
+    .btn-topic:hover {
+      background: var(--accent-blue);
+      color: #000;
+    }
+
     /* Dashboard Header & Grid */
     .dashboard-header {
       text-align: center;
@@ -365,6 +379,7 @@
       <button class="dash-btn" onclick="openModal('honors')">افتخارات</button>
       <button class="dash-btn" onclick="openModal('matches')">بازی‌ها</button>
       <button class="dash-btn" onclick="openModal('topScorers')">آقای گل</button>
+      <button class="dash-btn" onclick="openModal('games')">بازی ها</button>
     </div>
   </div>
 
@@ -373,6 +388,7 @@
       <div class="modal-header">
         <h3 id="modalTitle">عنوان</h3>
         <div class="modal-header-actions">
+          <button id="modalTopicBtn" class="btn btn-topic hidden" onclick="renderGamesTopicForm()">موضوع بازی‌ها</button>
           <button id="modalAddBtn" class="btn btn-add hidden">+</button>
           <button class="close-btn" onclick="closeModal()">✕</button>
         </div>
@@ -413,12 +429,20 @@
         news: 'اخبار',
         honors: 'افتخارات',
         matches: 'بازی‌ها',
-        topScorers: 'آقای گل'
+        topScorers: 'آقای گل',
+        games: 'بازی ها'
       };
       
       document.getElementById('modalTitle').innerText = titleMap[module];
       const addBtn = document.getElementById('modalAddBtn');
+      const topicBtn = document.getElementById('modalTopicBtn');
       
+      if (module === 'games') {
+        topicBtn.classList.remove('hidden');
+      } else {
+        topicBtn.classList.add('hidden');
+      }
+
       if (module === 'adminInfo') {
         addBtn.classList.add('hidden');
         renderAdminForm();
@@ -473,6 +497,7 @@
         case 'honors': return `مربی: ${item.coach} | طلا: ${item.gold} | نقره: ${item.silver} | برنز: ${item.bronze}`;
         case 'matches': return `${item.team1} (${item.goals1}) - (${item.goals2}) ${item.team2}`;
         case 'topScorers': return `[${item.rank}] ${item.player} (${item.team}) - گل: ${item.goals} | پرچم: ${item.flag}`;
+        case 'games': return `تیم اول: <b>${item.team1}</b> | تیم دوم: <b>${item.team2}</b>`;
         default: return '';
       }
     }
@@ -522,12 +547,40 @@
           <input id="f_rank" type="number" class="custom-input" placeholder="رتبه بازیکن" value="${itemData.rank || ''}">
           <input id="f_goals" type="number" class="custom-input" placeholder="تعداد گل ها" value="${itemData.goals || ''}">
         `;
+      } else if (activeModule === 'games') {
+        fields = `
+          <input id="f_team1" class="custom-input" placeholder="تیم اول" value="${itemData.team1 || ''}">
+          <input id="f_team2" class="custom-input" placeholder="تیم دوم" value="${itemData.team2 || ''}">
+        `;
       }
 
       container.innerHTML = `
         ${fields}
         <button class="btn btn-auth" style="margin-top: 15px;" onclick="saveData('${id || ''}')">تایید و ثبت</button>
       `;
+    }
+
+    // Games Topic Form Builder
+    async function renderGamesTopicForm() {
+      const container = document.getElementById('modalFormContainer');
+      container.classList.remove('hidden');
+      
+      const currentTopic = await apiRequest('gamesTopic');
+      const topicText = (currentTopic && currentTopic.title) ? currentTopic.title : '';
+
+      container.innerHTML = `
+        <label>متن موضوع بازی‌ها:</label>
+        <textarea id="f_games_topic" class="custom-input" placeholder="متن موضوع بازی‌ها را وارد کنید">${topicText}</textarea>
+        <button class="btn btn-auth" style="margin-top: 15px;" onclick="saveGamesTopic()">تایید موضوع</button>
+      `;
+    }
+
+    // Save Games Topic
+    async function saveGamesTopic() {
+      const topicVal = document.getElementById('f_games_topic').value;
+      await apiRequest('gamesTopic', 'PUT', { title: topicVal });
+      document.getElementById('modalFormContainer').classList.add('hidden');
+      alert('موضوع بازی‌ها با موفقیت بروزرسانی شد.');
     }
 
     // Save Data (POST / PUT)
@@ -545,6 +598,8 @@
         payload = { team1: document.getElementById('f_team1').value, team2: document.getElementById('f_team2').value, goals1: document.getElementById('f_goals1').value, goals2: document.getElementById('f_goals2').value };
       } else if (activeModule === 'topScorers') {
         payload = { player: document.getElementById('f_player').value, team: document.getElementById('f_team').value, flag: document.getElementById('f_flag').value, rank: document.getElementById('f_rank').value, goals: document.getElementById('f_goals').value };
+      } else if (activeModule === 'games') {
+        payload = { team1: document.getElementById('f_team1').value, team2: document.getElementById('f_team2').value };
       }
 
       const path = id ? `${activeModule}/${id}` : activeModule;
@@ -586,3 +641,4 @@
   </script>
 </body>
 </html>
+ 
