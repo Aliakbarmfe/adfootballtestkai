@@ -517,13 +517,13 @@
 
     function getItemText(item) {
       switch(activeModule) {
-        case 'teams': return `نام: ${item.name} | گل: ${item.goals} | امتیاز: ${item.points}`;
+        case 'teams': return `نام: ${item.name} | بازی: ${item.played || 0} | گل: ${item.goals} | امتیاز: ${item.points}`;
         case 'products': return `محصول: ${item.name} | قیمت: ${item.price} | توضیح: ${item.desc}`;
         case 'news': return `<b>${item.title}</b>: ${item.desc}`;
         case 'honors': return `مربی: ${item.coach} | طلا: ${item.gold} | نقره: ${item.silver} | برنز: ${item.bronze}`;
         case 'matches': return `${item.team1} (${item.goals1}) - (${item.goals2}) ${item.team2}`;
         case 'topScorers': return `[${item.rank}] ${item.player} (${item.team}) - گل: ${item.goals} | پرچم: ${item.flag}`;
-        case 'games': return `تیم اول: <b>${item.team1}</b> (تعداد بازی: ${item.games1 || 0}) | تیم دوم: <b>${item.team2}</b> (تعداد بازی: ${item.games2 || 0})`;
+        case 'games': return `تیم اول: <b>${item.team1}</b> | تیم دوم: <b>${item.team2}</b>`;
         default: return '';
       }
     }
@@ -549,6 +549,7 @@
       if (activeModule === 'teams') {
         fields = `
           <input id="f_name" class="custom-input" placeholder="نام تیم" value="${itemData.name || ''}">
+          <input id="f_played" type="number" class="custom-input" placeholder="تعداد بازی‌ها" value="${itemData.played || ''}">
           <input id="f_goals" type="number" class="custom-input" placeholder="تعداد گل" value="${itemData.goals || ''}">
           <input id="f_points" type="number" class="custom-input" placeholder="امتیاز تیم" value="${itemData.points || ''}">
         `;
@@ -603,10 +604,7 @@
       } else if (activeModule === 'games') {
         fields = `
           <input id="f_team1" class="custom-input" placeholder="تیم اول" value="${itemData.team1 || ''}">
-          <input id="f_games1" type="number" class="custom-input" placeholder="تعداد بازی‌های تیم اول" value="${itemData.games1 || ''}">
-          <hr style="border-color: var(--border-color); margin: 10px 0;">
           <input id="f_team2" class="custom-input" placeholder="تیم دوم" value="${itemData.team2 || ''}">
-          <input id="f_games2" type="number" class="custom-input" placeholder="تعداد بازی‌های تیم دوم" value="${itemData.games2 || ''}">
         `;
       }
 
@@ -660,7 +658,12 @@
     async function saveData(id) {
       let payload = {};
       if (activeModule === 'teams') {
-        payload = { name: document.getElementById('f_name').value, goals: document.getElementById('f_goals').value, points: document.getElementById('f_points').value };
+        payload = { 
+          name: document.getElementById('f_name').value, 
+          played: document.getElementById('f_played').value,
+          goals: document.getElementById('f_goals').value, 
+          points: document.getElementById('f_points').value 
+        };
       } else if (activeModule === 'products') {
         payload = { name: document.getElementById('f_name').value, price: document.getElementById('f_price').value, desc: document.getElementById('f_desc').value };
       } else if (activeModule === 'news') {
@@ -688,12 +691,7 @@
       } else if (activeModule === 'topScorers') {
         payload = { player: document.getElementById('f_player').value, team: document.getElementById('f_team').value, flag: document.getElementById('f_flag').value, rank: document.getElementById('f_rank').value, goals: document.getElementById('f_goals').value };
       } else if (activeModule === 'games') {
-        payload = { 
-          team1: document.getElementById('f_team1').value, 
-          games1: document.getElementById('f_games1').value,
-          team2: document.getElementById('f_team2').value,
-          games2: document.getElementById('f_games2').value
-        };
+        payload = { team1: document.getElementById('f_team1').value, team2: document.getElementById('f_team2').value };
       }
 
       const path = id ? `${activeModule}/${id}` : activeModule;
