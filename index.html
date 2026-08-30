@@ -561,7 +561,7 @@
         case 'teams': return `نام: ${item.name} | بازی: ${item.played || 0} | گل: ${item.goals} | امتیاز: ${item.points}`;
         case 'products': return `محصول: ${item.name} | قیمت: ${item.price} | توضیح: ${item.desc}`;
         case 'news': return `<b>${item.title}</b>: ${item.desc}`;
-        case 'honors': return `مربی: ${item.coach} | طلا: ${item.gold} | نقره: ${item.silver} | برنز: ${item.bronze}`;
+        case 'honors': return `رتبه: ${item.rank || '-'} | مربی: ${item.coach} | طلا: ${item.gold} | نقره: ${item.silver} | برنز: ${item.bronze}`;
         case 'matches': return `${item.team1} (${item.goals1}) - (${item.goals2}) ${item.team2}`;
         case 'topScorers': return `[${item.rank}] ${item.player} (${item.team}) - گل: ${item.goals} | پرچم: ${item.flag}`;
         case 'games': return `تیم اول: <b>${item.team1}</b> | تیم دوم: <b>${item.team2}</b>`;
@@ -607,6 +607,7 @@
         `;
       } else if (activeModule === 'honors') {
         fields = `
+          <input id="f_rank" type="number" class="custom-input" placeholder="رتبه" value="${itemData.rank || ''}">
           <input id="f_coach" class="custom-input" placeholder="نام مربی" value="${itemData.coach || ''}">
           <input id="f_gold" type="number" class="custom-input" placeholder="تعداد مدال طلا" value="${itemData.gold || ''}">
           <input id="f_silver" type="number" class="custom-input" placeholder="تعداد مدال نقره" value="${itemData.silver || ''}">
@@ -710,7 +711,22 @@
       } else if (activeModule === 'news') {
         payload = { title: document.getElementById('f_title').value, desc: document.getElementById('f_desc').value };
       } else if (activeModule === 'honors') {
-        payload = { coach: document.getElementById('f_coach').value, gold: document.getElementById('f_gold').value, silver: document.getElementById('f_silver').value, bronze: document.getElementById('f_bronze').value };
+        const inputRank = document.getElementById('f_rank').value.trim();
+        if (inputRank !== '') {
+          const honorsData = await apiRequest('honors');
+          if (honorsData) {
+            const existingId = Object.keys(honorsData).find(k => {
+              if (id && k === id) return false;
+              return String(honorsData[k].rank) === inputRank;
+            });
+            if (existingId) {
+              const existingItem = honorsData[existingId];
+              alert(`رتبه برای ${existingItem.coach || 'بازیکن دیگری'} تعیین شده است`);
+              return;
+            }
+          }
+        }
+        payload = { rank: inputRank, coach: document.getElementById('f_coach').value, gold: document.getElementById('f_gold').value, silver: document.getElementById('f_silver').value, bronze: document.getElementById('f_bronze').value };
       } else if (activeModule === 'matches') {
         const players1 = Array.from(document.querySelectorAll('#players1_container .player-input'))
                               .map(inp => inp.value.trim()).filter(Boolean);
