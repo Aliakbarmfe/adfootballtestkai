@@ -558,7 +558,10 @@
 
     function getItemText(item) {
       switch(activeModule) {
-        case 'teams': return `نام: ${item.name} | بازی: ${item.played || 0} | گل: ${item.goals} | امتیاز: ${item.points}`;
+        case 'teams': 
+          const coachStr = item.coach ? ` | مربی: ${item.coach}` : '';
+          const mediaStr = item.media ? ` | رسانه: ${item.media}` : '';
+          return `نام: <b>${item.name}</b>${coachStr}${mediaStr} | بازی: ${item.played || 0} | گل: ${item.goals || 0} | امتیاز: ${item.points || 0}`;
         case 'products': return `محصول: ${item.name} | قیمت: ${item.price} | توضیح: ${item.desc}`;
         case 'news': return `<b>${item.title}</b>: ${item.desc}`;
         case 'honors': return `رتبه: ${item.rank || '-'} | مربی: ${item.coach} | طلا: ${item.gold} | نقره: ${item.silver} | برنز: ${item.bronze}`;
@@ -590,9 +593,15 @@
       if (activeModule === 'teams') {
         fields = `
           <input id="f_name" class="custom-input" placeholder="نام تیم" value="${itemData.name || ''}">
+          <input id="f_coach" class="custom-input" placeholder="نام مربی" value="${itemData.coach || ''}">
+          <input id="f_media" class="custom-input" placeholder="رسانه / شبکه اجتماعی" value="${itemData.media || ''}">
           <input id="f_played" type="number" class="custom-input" placeholder="تعداد بازی‌ها" value="${itemData.played || ''}">
           <input id="f_goals" type="number" class="custom-input" placeholder="تعداد گل" value="${itemData.goals || ''}">
           <input id="f_points" type="number" class="custom-input" placeholder="امتیاز تیم" value="${itemData.points || ''}">
+          
+          <label>لیست بازیکنان:</label>
+          <div id="team_players_container"></div>
+          <button type="button" class="btn-sub-add" onclick="addPlayerField('team_players_container')">+ افزودن بازیکن</button>
         `;
       } else if (activeModule === 'products') {
         fields = `
@@ -655,6 +664,16 @@
         <button class="btn btn-auth" style="margin-top: 15px;" onclick="saveData('${id || ''}')">تایید و ثبت</button>
       `;
 
+      // Populate existing players if editing a team
+      if (activeModule === 'teams') {
+        const playerList = itemData.players || [];
+        if (playerList.length > 0) {
+          playerList.forEach(p => addPlayerField('team_players_container', p));
+        } else {
+          addPlayerField('team_players_container');
+        }
+      }
+
       // Populate existing players if editing a match
       if (activeModule === 'matches') {
         const p1List = itemData.players1 || [];
@@ -700,11 +719,17 @@
     async function saveData(id) {
       let payload = {};
       if (activeModule === 'teams') {
+        const players = Array.from(document.querySelectorAll('#team_players_container .player-input'))
+                             .map(inp => inp.value.trim()).filter(Boolean);
+
         payload = { 
           name: document.getElementById('f_name').value, 
+          coach: document.getElementById('f_coach').value,
+          media: document.getElementById('f_media').value,
           played: document.getElementById('f_played').value,
           goals: document.getElementById('f_goals').value, 
-          points: document.getElementById('f_points').value 
+          points: document.getElementById('f_points').value,
+          players: players
         };
       } else if (activeModule === 'products') {
         payload = { name: document.getElementById('f_name').value, price: document.getElementById('f_price').value, desc: document.getElementById('f_desc').value };
