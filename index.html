@@ -793,8 +793,20 @@
     }
 
     // Admin Info Handling
-    function renderAdminForm() {
+    async function renderAdminForm() {
       const container = document.getElementById('modalListContainer');
+      container.innerHTML = 'در حال دریافت اطلاعات...';
+
+      try {
+        const adminData = await apiRequest('adminInfo');
+        if (adminData && adminData.user && adminData.pass) {
+          currentAdmin.user = adminData.user;
+          currentAdmin.pass = adminData.pass;
+        }
+      } catch (err) {
+        console.error('خطا در دریافت اطلاعات مدیر از فایربیس:', err);
+      }
+
       container.innerHTML = `
         <div style="padding: 10px 0;">
           <label>نام کاربری جدید:</label>
@@ -806,11 +818,19 @@
       `;
     }
 
-    function updateAdmin() {
-      currentAdmin.user = document.getElementById('new_u').value;
-      currentAdmin.pass = document.getElementById('new_p').value;
-      alert('اطلاعات مدیر با موفقیت تغییر یافت.');
-      closeModal();
+    async function updateAdmin() {
+      const newUser = document.getElementById('new_u').value;
+      const newPass = document.getElementById('new_p').value;
+
+      try {
+        await apiRequest('adminInfo', 'PUT', { user: newUser, pass: newPass });
+        currentAdmin.user = newUser;
+        currentAdmin.pass = newPass;
+        alert('اطلاعات مدیر با موفقیت در فایربیس تغییر یافت.');
+        closeModal();
+      } catch (err) {
+        alert('خطا در ثبت اطلاعات در فایربیس');
+      }
     }
   </script>
 </body>
