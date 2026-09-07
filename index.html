@@ -459,6 +459,22 @@
     let currentAdmin = { user: 'fizon', pass: 'fizon' };
     let activeModule = '';
 
+    // دریافت اطلاعات اولیه مدیر از فایربیس هنگام لود صفحه
+    async function loadAdminCredentials() {
+      try {
+        const adminData = await apiRequest('adminInfo');
+        if (adminData && adminData.user && adminData.pass) {
+          currentAdmin.user = adminData.user;
+          currentAdmin.pass = adminData.pass;
+        }
+      } catch (err) {
+        console.error('خطا در دریافت اولیه اطلاعات مدیر:', err);
+      }
+    }
+
+    // لود اولیه اعتبارات
+    loadAdminCredentials();
+
     // Fetch site visitors count from Firebase
     async function fetchSiteViews() {
       try {
@@ -470,9 +486,13 @@
     }
 
     // Auth Handling
-    function handleLogin() {
-      const u = document.getElementById('x_user').value;
-      const p = document.getElementById('x_pass').value;
+    async function handleLogin() {
+      const u = document.getElementById('x_user').value.trim();
+      const p = document.getElementById('x_pass').value.trim();
+
+      // دریافت آخرین اطلاعات مدیر از فایربیس موقع ورود جهت اطمینان
+      await loadAdminCredentials();
+
       if (u === currentAdmin.user && p === currentAdmin.pass) {
         document.getElementById('loginSection').classList.add('hidden');
         document.getElementById('dashboardSection').classList.remove('hidden');
@@ -819,8 +839,13 @@
     }
 
     async function updateAdmin() {
-      const newUser = document.getElementById('new_u').value;
-      const newPass = document.getElementById('new_p').value;
+      const newUser = document.getElementById('new_u').value.trim();
+      const newPass = document.getElementById('new_p').value.trim();
+
+      if (!newUser || !newPass) {
+        alert('لطفا نام کاربری و رمز عبور را پر کنید.');
+        return;
+      }
 
       try {
         await apiRequest('adminInfo', 'PUT', { user: newUser, pass: newPass });
